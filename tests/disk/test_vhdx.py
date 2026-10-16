@@ -115,8 +115,12 @@ def test_vhdx_partial_runs(test_input: tuple[bytes, int, int], expected: list[tu
 def _patched_fixed_vhdx(bat_changes: dict[int, tuple[int, int | None]]) -> tuple[VHDX, list[bytes]]:
     """Return the fixed test VHDX with a distinct fill pattern per payload block and a modified BAT.
 
-    ``bat_changes`` maps a block number to ``(state, block_number_whose_payload_to_use)``.
-    Also returns the expected content of every virtual block.
+    Args:
+        bat_changes: Maps a block number to a tuple of the new payload block state and the block whose payload
+            the entry should point to, or ``None`` to keep the block's own payload.
+
+    Returns:
+        The patched VHDX and the expected content of every virtual block.
     """
     with gzip.open(absolute_path("_data/disk/vhdx/fixed.vhdx.gz"), "rb") as fh:
         buf = bytearray(fh.read())
@@ -172,6 +176,7 @@ def _patched_fixed_vhdx(bat_changes: dict[int, tuple[int, int | None]]) -> tuple
 def test_vhdx_read_across_block_boundaries(
     bat_changes: dict[int, tuple[int, int | None]], offset: int, length: int | None
 ) -> None:
+    """Test reads crossing block boundaries next to zero, absent and non-contiguous payload blocks."""
     vhdx, expected = _patched_fixed_vhdx(bat_changes)
     expected_data = b"".join(expected)
     length = len(expected_data) - offset if length is None else length
